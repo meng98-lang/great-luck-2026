@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const userAgent = req.headers.get('user-agent') || 'Unknown';
     const country = req.headers.get('x-vercel-ip-country') || 'Unknown';
 
-    await prisma.lead.create({
+    await prisma.lead.create({ 
       data: {
         name,
         gender,
