@@ -1,39 +1,37 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Create leads table
+    // Lead table with wealth_goal
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "Lead" (
+      CREATE TABLE IF NOT EXISTS "leads" (
         "id" SERIAL PRIMARY KEY,
         "name" TEXT NOT NULL,
-        "phone" TEXT,
-        "email" TEXT,
-        "wealthGoal" TEXT,
-        "note" TEXT,
-        "createdAt" TIMESTAMP DEFAULT NOW()
-      )
-    `)
-
-    // Create settings table
+        "gender" TEXT NOT NULL,
+        "birth_date" TEXT NOT NULL,
+        "wealth_goal" TEXT,
+        "ip" TEXT,
+        "country" TEXT,
+        "user_agent" TEXT,
+        "subdomain" TEXT,
+        "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+    
+    // Settings table
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "Settings" (
+      CREATE TABLE IF NOT EXISTS "settings" (
         "id" SERIAL PRIMARY KEY,
         "key" TEXT UNIQUE NOT NULL,
-        "value" TEXT,
-        "updatedAt" TIMESTAMP DEFAULT NOW()
-      )
-    `)
-
-    return NextResponse.json({
-      success: true,
-      message: '資料庫初始化完成！已建立 leads 和 settings 表格。',
-    })
-  } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: '初始化失敗：' + (error instanceof Error ? error.message : '未知錯誤'),
-    }, { status: 500 })
+        "value" TEXT NOT NULL
+      );
+    `);
+    
+    return NextResponse.json({ success: true, message: 'Great Luck DB Initialized' });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

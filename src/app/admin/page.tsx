@@ -1,105 +1,127 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import AdminGuard from '@/components/AdminGuard'
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import AdminGuard from '@/components/AdminGuard';
 
 interface Lead {
-  id: number
-  name: string
-  phone: string | null
-  email: string | null
-  wealthGoal: string | null
-  createdAt: string
+  id: number;
+  name: string;
+  gender: string;
+  birthDate: string;
+  wealthGoal: string;
+  ip: string;
+  country: string;
+  userAgent: string;
+  subdomain: string;
+  createdAt: string;
 }
 
-export default function AdminDashboard() {
-  const [leads, setLeads] = useState<Lead[]>([])
-  const [loading, setLoading] = useState(true)
+export default function AdminLeads() {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLeads()
-  }, [])
+    fetch('/api/admin/leads?t=' + Date.now())
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setLeads(data);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
 
-  const fetchLeads = async () => {
+  const calculateAge = (birthDate: string) => {
     try {
-      const res = await fetch('/api/admin/leads')
-      const data = await res.json()
-      setLeads(data.leads || [])
-    } catch (err) {
-      console.error('獲取數據失敗', err)
-    } finally {
-      setLoading(false)
+      const birth = new Date(birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      return age >= 0 ? age : 'N/A';
+    } catch (e) {
+      return 'N/A';
     }
-  }
+  };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('確定要刪除這筆資料嗎？')) return
-    try {
-      await fetch('/api/admin/leads?id=' + id, { method: 'DELETE' })
-      fetchLeads()
-    } catch (err) {
-      alert('刪除失敗')
-    }
-  }
+  const exportCSV = () => {
+    if (leads.length === 0) return;
+    const headers = ['国家', '姓名', '生辰八字', '年龄', '2026财运目标', '来源子域名', '提交时间'];
+    const rows = leads.map(l => [
+      l.country || '未知',
+      l.name,
+      l.birthDate,
+      calculateAge(l.birthDate),
+      l.wealthGoal || '未填',
+      l.subdomain || '主站',
+      new Date(l.createdAt).toLocaleString()
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `leads_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
 
   return (
     <AdminGuard>
-      <div className="min-h-screen bg-[#f7e8c3] font-serif p-6">
-        <h1 className="text-3xl font-bold text-red-800 mb-6 text-center">管理後台 - 好運名單</h1>
-        <div className="bg-white rounded-xl shadow-lg p-4 overflow-x-auto mb-4">
-          <p className="text-gray-600 mb-2">共 {leads.length} 筆資料</p>
-          {loading ? (
-            <p className="text-center py-8">載入中…</p>
-          ) : (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-amber-100">
-                  <th className="border p-3 text-left">ID</th>
-                  <th className="border p-3 text-left">姓名</th>
-                  <th className="border p-3 text-left">電話</th>
-                  <th className="border p-3 text-left">Email</th>
-                  <th className="border p-3 text-left">富貴目標</th>
-                  <th className="border p-3 text-left">時間</th>
-                  <th className="border p-3 text-left">操作</th>
+      <div className="min-h-screen bg-[#f7e8c3] p-8 font-serif">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8 border-b-2 border-[#8b0000] pb-4">
+            <h1 className="text-3xl font-bold text-[#8b0000]">客户资料管理后台 (大运版)</h1>
+            <div className="flex gap-4">
+              <Link href="/admin/settings" className="px-6 py-2 bg-white border-2 border-[#d4af37] text-[#8b0000] rounded-full font-bold hover:bg-[#fff9e6] transition-colors">
+                配置中心
+              </Link>
+              <button onClick={exportCSV} className="px-6 py-2 bg-[#8b0000] text-white rounded-full font-bold shadow-lg hover:bg-red-900 transition-colors">
+                导出报表
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden border border-[#d4af37]">
+            <table className="min-w-full divide-y divide-[#d4af37]">
+              <thead className="bg-[#fff9e6]">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#8b0000] uppercase tracking-wider">国家</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#8b0000] uppercase tracking-wider">客户姓名</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#8b0000] uppercase tracking-wider">生辰八字</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#8b0000] uppercase tracking-wider">年龄</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#8b0000] uppercase tracking-wider">2026财运目标</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#8b0000] uppercase tracking-wider">来源子域名</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-[#8b0000] uppercase tracking-wider">提交时间</th>
                 </tr>
               </thead>
-              <tbody>
-                {leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-amber-50">
-                    <td className="border p-3">{lead.id}</td>
-                    <td className="border p-3 font-medium">{lead.name}</td>
-                    <td className="border p-3">{lead.phone || '-'}</td>
-                    <td className="border p-3">{lead.email || '-'}</td>
-                    <td className="border p-3">
-                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
-                        {lead.wealthGoal || '未填寫'}
-                      </span>
-                    </td>
-                    <td className="border p-3 text-sm text-gray-500">
-                      {new Date(lead.createdAt).toLocaleString('zh-TW')}
-                    </td>
-                    <td className="border p-3">
-                      <button
-                        onClick={() => handleDelete(lead.id)}
-                        className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
-                      >
-                        刪除
-                      </button>
-                    </td>
+              <tbody className="divide-y divide-[#d4af37]">
+                {loading ? (
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-[#5d4037]">正在读取命盘数据...</td></tr>
+                ) : leads.length === 0 ? (
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-[#5d4037]">暂无客户提交记录</td></tr>
+                ) : leads.map((lead) => (
+                  <tr key={lead.id} className="hover:bg-[#fff9e6] transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#059669] font-bold">{lead.country || '未知'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#333]">{lead.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#5d4037]">{lead.birthDate}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1d4ed8] font-bold">{calculateAge(lead.birthDate)} 岁</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#d97706] font-medium">{lead.wealthGoal || '未填'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#8b4513]">{lead.subdomain || '主站'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(lead.createdAt).toLocaleString()}</td>
                   </tr>
                 ))}
-                {leads.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="border p-6 text-center text-gray-500">
-                      尚無資料
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
-          )}
+          </div>
         </div>
       </div>
     </AdminGuard>
-  )
+  );
 }

@@ -8,10 +8,24 @@ datasource db {
 }
 
 model Lead {
-  id         Int       @id @default(autoincrement())
-  name       String
-  phone      String?
-  email      String?
-  wealthGoal String?
-  createdAt  DateTime  @default(now())
+  id          Int      @id @default(autoincrement())
+  name        String
+  gender      String
+  birthDate   String   @map("birth_date")
+  wealthGoal  String?  @map("wealth_goal")
+  ip          String?
+  country     String?
+  userAgent   String?  @map("user_agent")
+  subdomain   String?  @map("subdomain")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("leads")
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("settings")
 }

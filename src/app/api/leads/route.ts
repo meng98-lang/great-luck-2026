@@ -1,31 +1,42 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-export async function POST(request: NextRequest) {
+export const dynamic = 'force-dynamic';
+
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
-    const { name, phone, email, wealthGoal } = body
+    const body = await req.json();
+    const { name, gender, birthDate, wealthGoal, subdomain } = body;
+    const ip = req.headers.get('x-forwarded-for') || '0.0.0.0';
+    const userAgent = req.headers.get('user-agent') || 'Unknown';
+    const country = req.headers.get('x-vercel-ip-country') || 'Unknown';
 
-    if (!name) {
-      return NextResponse.json({ error: '姓名為必填欄位' }, { status: 400 })
-    }
+    await prisma.lead.create({
+      data: {
+        name,
+        gender,
+        birthDate: String(birthDate),
+        wealthGoal: String(wealthGoal),
+        ip,
+        userAgent,
+        country,
+        subdomain: subdomain || req.headers.get('host') || 'Unknown',
+      },
+    });
 
-    const lead = await prisma.lead.create({
-      data: { name, phone, email, wealthGoal },
-    })
+    const lineSetting = await prisma.setting.findUnique({ where: { key: 'Line链接' } });
+    const baseUrl = lineSetting?.value || 'https://line.me/R/oaMessage/@758wcfpy/';
+    
+    let cleanUrl = baseUrl;
+    if (cleanUrl.includes('?')) cleanUrl = cleanUrl.split('?')[0];
+    if (!cleanUrl.endsWith('/')) cleanUrl += '/';
 
-    const lineMessage = encodeURIComponent(
-      '🧧 2026好運接龍！我剛填寫了我的富貴目標：「' + (wealthGoal || '迎接好運') + '」，快來一起接龍，把好運傳遞下去！
+    const message = `师傅您好，我是${name}，生辰是${birthDate}，性别${gender === 'male' ? '男' : '女'}，我2026年的财运目标是：${wealthGoal}。申请免费领取大运报告。`;
+    const redirectUrl = `${cleanUrl}?text=${encodeURIComponent(message)}`;
 
-👉 https://great-luck-2026.vercel.app'
-    )
-
-    return NextResponse.json({
-      success: true,
-      lead,
-      redirect: 'https://line.me/R/msg/text/?' + lineMessage,
-    })
-  } catch (error) {
-    return NextResponse.json({ error: '提交失敗' }, { status: 500 })
+    return NextResponse.json({ success: true, redirectUrl });
+  } catch (error: any) {
+    console.error('API Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
