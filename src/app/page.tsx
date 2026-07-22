@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+const DEFAULT_MASTER_IMAGE = 'https://sc04.alicdn.com/kf/H96a2f544424a4e5ca321e36ffff4bcf9B.jpg';
+
 export default function Home() {
   const [formData, setFormData] = useState({
     name: '',
@@ -11,12 +13,19 @@ export default function Home() {
   });
   const [isCalculating, setIsCalculating] = useState(false);
   const [lineLink, setLineLink] = useState('https://line.me');
+  const [whatsappLink, setWhatsappLink] = useState('https://wa.me');
+  const [masterPhotoUrl, setMasterPhotoUrl] = useState(DEFAULT_MASTER_IMAGE);
 
   useEffect(() => {
     fetch('/api/settings/public?t=' + Date.now())
       .then(res => res.json())
       .then(data => {
         if (data.lineLink) setLineLink(data.lineLink);
+        if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
+        if (data.masterPhotoUrl) setMasterPhotoUrl(data.masterPhotoUrl);
+      })
+      .catch(() => {
+        // Keep defaults on error
       });
   }, []);
 
@@ -67,10 +76,13 @@ export default function Home() {
       <div className="max-w-md mx-auto pt-10 px-4 pb-20">
         <div className="text-center mb-6">
           <div className="w-full aspect-[4/3] mb-4 overflow-hidden rounded-lg border-2 border-[#d4af37] shadow-lg">
-            <img 
-              src="https://sc04.alicdn.com/kf/H96a2f544424a4e5ca321e36ffff4bcf9B.jpg" 
-              alt="Master" 
+            <img
+              src={masterPhotoUrl || DEFAULT_MASTER_IMAGE}
+              alt="Master"
               className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = DEFAULT_MASTER_IMAGE;
+              }}
             />
           </div>
           <h1 className="text-3xl font-bold text-[#8b0000] mb-2">大師親自解析：您的十年大運何時降臨？</h1>
