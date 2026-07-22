@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const leads = await prisma.lead.findMany({
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json({ leads })
+    return NextResponse.json(leads)
   } catch (error) {
     return NextResponse.json({ error: '獲取數據失敗' }, { status: 500 })
   }
