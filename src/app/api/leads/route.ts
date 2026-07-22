@@ -26,15 +26,15 @@ export async function POST(req: NextRequest) {
 
     const settings = await prisma.setting.findMany();
     const settingsMap = settings.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {} as Record<string, string>);
-    const wa = settingsMap['whatsappLink'];
-    const line = settingsMap['lineLink'];
-    let target = wa || line || 'https://line.me/R/oaMessage/@758wcfpy/';
+    const wa = settingsMap['WhatsApp链接'] || 'https://wa.me/8617706358414';
+    const line = settingsMap['Line链接'];
+    let target = wa || line;
 
     let cleanUrl = target;
     if (cleanUrl.includes('?')) cleanUrl = cleanUrl.split('?')[0];
     if (!cleanUrl.endsWith('/')) cleanUrl += '/';
 
-    const message = `师傅您好，我是${name}，生辰是${birthDate}，性别${gender === 'male' ? '男' : '女'}，我2026年的财运目标是：${wealthGoal}。申请免费领取大运报告。`;
+    const message = `师傅您好，我是${name}，生辰是${birthDate}，性别${gender === 'male' ? '男' : '女'}，我的2026财运目标是：${wealthGoal}。申请领取报告。`;
     const redirectUrl = `${cleanUrl}?text=${encodeURIComponent(message)}`;
 
     return NextResponse.json({ success: true, redirectUrl });
