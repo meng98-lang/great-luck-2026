@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const userAgent = req.headers.get('user-agent') || 'Unknown';
     const country = req.headers.get('x-vercel-ip-country') || 'Unknown';
 
-    await prisma.lead.create({ 
+    await prisma.lead.create({
       data: {
         name,
         gender,
@@ -24,10 +24,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const lineSetting = await prisma.setting.findUnique({ where: { key: 'Line链接' } });
-    const baseUrl = lineSetting?.value || 'https://line.me/R/oaMessage/@758wcfpy/';
-    
-    let cleanUrl = baseUrl;
+    const settings = await prisma.setting.findMany();
+    const settingsMap = settings.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {} as Record<string, string>);
+    const wa = settingsMap['whatsappLink'];
+    const line = settingsMap['lineLink'];
+    let target = wa || line || 'https://line.me/R/oaMessage/@758wcfpy/';
+
+    let cleanUrl = target;
     if (cleanUrl.includes('?')) cleanUrl = cleanUrl.split('?')[0];
     if (!cleanUrl.endsWith('/')) cleanUrl += '/';
 
